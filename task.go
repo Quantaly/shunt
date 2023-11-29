@@ -3,22 +3,19 @@ package shunt
 
 import (
 	"fmt"
-	"sync"
 )
+
+type unit struct{}
 
 // Task represents a task on another goroutine.
 //
 // It is safe to copy and to use concurrently.
 //
-// Attempting to use the zero value will result in a nil pointer dereference.
+// The zero value is not safe to use.
+// In the current implementation, using the zero value will cause the program to receive on a nil channel.
 type Task[T any] struct {
-	*task[T]
-}
-
-type task[T any] struct {
-	once       sync.Once
-	channel    <-chan completion[T]
-	completion completion[T]
+	done       <-chan unit
+	completion *completion[T]
 }
 
 type completion[T any] struct {
@@ -28,16 +25,10 @@ type completion[T any] struct {
 	panicValue any
 }
 
-func (t *task[T]) join() {
-	t.once.Do(func() {
-		t.completion = <-t.channel
-	})
-}
-
 // Join blocks until the task is finished.
 // If the operation panics, Join will panic.
 func (t Task[T]) Join() (T, error) {
-	t.join()
+	<-t.done
 
 	if t.completion.normal {
 		return t.completion.result, t.completion.err
@@ -49,7 +40,7 @@ func (t Task[T]) Join() (T, error) {
 // JoinWithoutPanicking blocks until the task is finished.
 // If the operation panics, JoinWithoutPanicking will return an error.
 func (t Task[T]) JoinWithoutPanicking() (T, error) {
-	t.join()
+	<-t.done
 
 	if t.completion.normal {
 		return t.completion.result, t.completion.err
@@ -61,18 +52,20 @@ func (t Task[T]) JoinWithoutPanicking() (T, error) {
 
 // Do runs f on a new goroutine and returns a Task representing its result.
 func Do[T any](f func() (T, error)) Task[T] {
-	channel := make(chan completion[T], 1)
+	done := make(chan unit)
+	completion := new(completion[T])
 	go func() {
-		completed := false // set to true after f successfully returns
 		defer func() {
-			if !completed {
-				channel <- completion[T]{normal: false, panicValue: recover()}
+			if !completion.normal {
+				completion.panicValue = recover()
+				close(done)
 			}
 		}()
 
-		result, err := f()
-		completed = true
-		channel <- completion[T]{normal: true, result: result, err: err}
+		completion.normal = false
+		completion.result, completion.err = f()
+		completion.normal = true
+		close(done)
 	}()
-	return Task[T]{task: &task[T]{channel: channel}}
+	return Task[T]{done: done, completion: completion}
 }

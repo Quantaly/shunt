@@ -66,8 +66,6 @@ func TestJoinWithoutPanicking(t *testing.T) {
 	}
 }
 
-type unit struct{}
-
 func TestConcurrentJoin(t *testing.T) {
 	const expected = 42
 	waitChan := make(chan unit)
