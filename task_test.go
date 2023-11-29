@@ -56,6 +56,16 @@ func TestNilPanic(t *testing.T) {
 	t.Error("task.Join() did not panic")
 }
 
+func TestJoinWithoutPanicking(t *testing.T) {
+	task := Do(func() (int, error) {
+		panic("oops")
+	})
+	_, err := task.JoinWithoutPanicking()
+	if err == nil || err.Error() != "panic: oops" {
+		t.Errorf("err was %v, want panic: oops", err)
+	}
+}
+
 type unit struct{}
 
 func TestConcurrentJoin(t *testing.T) {

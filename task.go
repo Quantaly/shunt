@@ -1,7 +1,10 @@
 // Package shunt provides a simple mechanism for executing a function on a new goroutine.
 package shunt
 
-import "sync"
+import (
+	"fmt"
+	"sync"
+)
 
 // Task represents a task on another goroutine.
 //
@@ -25,16 +28,34 @@ type completion[T any] struct {
 	panicValue any
 }
 
-// Join blocks until the computation is finished.
-func (t Task[T]) Join() (T, error) {
+func (t *task[T]) join() {
 	t.once.Do(func() {
 		t.completion = <-t.channel
 	})
+}
+
+// Join blocks until the task is finished.
+// If the operation panics, Join will panic.
+func (t Task[T]) Join() (T, error) {
+	t.join()
 
 	if t.completion.normal {
 		return t.completion.result, t.completion.err
 	} else {
 		panic(t.completion.panicValue)
+	}
+}
+
+// JoinWithoutPanicking blocks until the task is finished.
+// If the operation panics, JoinWithoutPanicking will return an error.
+func (t Task[T]) JoinWithoutPanicking() (T, error) {
+	t.join()
+
+	if t.completion.normal {
+		return t.completion.result, t.completion.err
+	} else {
+		var zero T
+		return zero, fmt.Errorf("panic: %v", t.completion.panicValue)
 	}
 }
 
