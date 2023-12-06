@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - The error returned by `Task.JoinWithoutPanicking()` now wraps the panic value if the panic value is an error
+- GitHub Actions now tests on both "stable" and "oldstable" Go versions
 
 ## [1.1.1] - 2023-11-29
 
