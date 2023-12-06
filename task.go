@@ -46,8 +46,22 @@ func (t Task[T]) JoinWithoutPanicking() (T, error) {
 		return t.completion.result, t.completion.err
 	} else {
 		var zero T
-		return zero, fmt.Errorf("panic: %v", t.completion.panicValue)
+		err, _ := t.completion.panicValue.(error)
+		return zero, &panicError{text: fmt.Sprint("panic: ", t.completion.panicValue), err: err}
 	}
+}
+
+type panicError struct {
+	text string
+	err  error
+}
+
+func (e *panicError) Error() string {
+	return e.text
+}
+
+func (e *panicError) Unwrap() error {
+	return e.err
 }
 
 // Do runs f on a new goroutine and returns a Task representing its result.

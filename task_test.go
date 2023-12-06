@@ -66,6 +66,17 @@ func TestJoinWithoutPanicking(t *testing.T) {
 	}
 }
 
+func TestJoinWithoutPanickingUnwrap(t *testing.T) {
+	myError := errors.New("yeet")
+	task := Do(func() (int, error) {
+		panic(myError)
+	})
+	_, err := task.JoinWithoutPanicking()
+	if !errors.Is(err, myError) {
+		t.Error("err was not Is myError")
+	}
+}
+
 func TestConcurrentJoin(t *testing.T) {
 	const expected = 42
 	waitChan := make(chan unit)
