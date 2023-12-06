@@ -56,7 +56,30 @@ func TestNilPanic(t *testing.T) {
 	t.Error("task.Join() did not panic")
 }
 
-func TestJoinWithoutPanicking(t *testing.T) {
+func TestJoinWithoutPanickingSuccess(t *testing.T) {
+	task := Do(func() (int, error) {
+		return 9 + 10, nil
+	})
+	result, err := task.Join()
+	if result != 19 {
+		t.Errorf("result was %v, want 19", result)
+	}
+	if err != nil {
+		t.Errorf("err was %v, want nil", err)
+	}
+}
+
+func TestJoinWithoutPanickingError(t *testing.T) {
+	task := Do(func() (int, error) {
+		return 0, errors.New("hello")
+	})
+	_, err := task.Join()
+	if err == nil || err.Error() != "hello" {
+		t.Errorf("err was %v, want hello", err)
+	}
+}
+
+func TestJoinWithoutPanickingPanic(t *testing.T) {
 	task := Do(func() (int, error) {
 		panic("oops")
 	})
@@ -66,7 +89,7 @@ func TestJoinWithoutPanicking(t *testing.T) {
 	}
 }
 
-func TestJoinWithoutPanickingUnwrap(t *testing.T) {
+func TestJoinWithoutPanickingPanicUnwrap(t *testing.T) {
 	myError := errors.New("yeet")
 	task := Do(func() (int, error) {
 		panic(myError)
