@@ -7,13 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
+## [2.0.0] - 2025-07-05
 
-- More comprehensive tests for `Task.JoinWithoutPanicking()`
+### Removed
+
+- Panics are no longer automatically handled. A panic in a task will crash the program, unless you recover from it on your own.
+  - Removed `Task.JoinWithoutPanicking()`
 
 ### Changed
 
-- The error returned by `Task.JoinWithoutPanicking()` now wraps the panic value if the panic value is an error
 - Updated GitHub Actions workflow
   - Tests on both "stable" and "oldstable" Go versions
   - Simplify

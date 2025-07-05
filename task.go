@@ -1,10 +1,6 @@
 // Package shunt provides a simple mechanism for executing a function on a new goroutine.
 package shunt
 
-import (
-	"fmt"
-)
-
 type unit struct{}
 
 // Task represents a task on another goroutine.
@@ -19,49 +15,15 @@ type Task[T any] struct {
 }
 
 type completion[T any] struct {
-	normal     bool // if true, returned; if false, panicked
-	result     T
-	err        error
-	panicValue any
+	result T
+	err    error
 }
 
 // Join blocks until the task is finished.
 // If the operation panics, Join will panic.
 func (t Task[T]) Join() (T, error) {
 	<-t.done
-
-	if t.completion.normal {
-		return t.completion.result, t.completion.err
-	} else {
-		panic(t.completion.panicValue)
-	}
-}
-
-// JoinWithoutPanicking blocks until the task is finished.
-// If the operation panics, JoinWithoutPanicking will return an error.
-func (t Task[T]) JoinWithoutPanicking() (T, error) {
-	<-t.done
-
-	if t.completion.normal {
-		return t.completion.result, t.completion.err
-	} else {
-		var zero T
-		err, _ := t.completion.panicValue.(error)
-		return zero, &panicError{text: fmt.Sprint("panic: ", t.completion.panicValue), err: err}
-	}
-}
-
-type panicError struct {
-	text string
-	err  error
-}
-
-func (e *panicError) Error() string {
-	return e.text
-}
-
-func (e *panicError) Unwrap() error {
-	return e.err
+	return t.completion.result, t.completion.err
 }
 
 // Do runs f on a new goroutine and returns a Task representing its result.
@@ -69,16 +31,7 @@ func Do[T any](f func() (T, error)) Task[T] {
 	done := make(chan unit)
 	completion := new(completion[T])
 	go func() {
-		defer func() {
-			if !completion.normal {
-				completion.panicValue = recover()
-				close(done)
-			}
-		}()
-
-		completion.normal = false
 		completion.result, completion.err = f()
-		completion.normal = true
 		close(done)
 	}()
 	return Task[T]{done: done, completion: completion}

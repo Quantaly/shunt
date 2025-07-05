@@ -5,12 +5,21 @@ Shunt is a simple Go library for easily executing a function on a new goroutine 
 ## Installation
 
 ```sh
-go get github.com/Quantaly/shunt
+go get github.com/Quantaly/shunt/v2
 ```
 
 ## Usage
 
-See the [examples](examples).
+```go
+import "github.com/Quantaly/shunt/v2"
+
+task := shunt.Do(func() (int, error) {
+	return 42, nil
+})
+answer, err := task.Join()
+```
+
+Also see the [examples](./examples).
 
 ## Contributing
 
