@@ -20,7 +20,6 @@ type completion[T any] struct {
 }
 
 // Join blocks until the task is finished.
-// If the operation panics, Join will panic.
 func (t Task[T]) Join() (T, error) {
 	<-t.done
 	return t.completion.result, t.completion.err
